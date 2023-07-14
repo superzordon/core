@@ -269,7 +269,8 @@ type Snapshot struct {
 
 	// OperationChannel is used to enqueue actions to the main snapshot Run loop. It is used to
 	// schedule actions such as ancestral records updates, checksum computation, snapshot operations.
-	OperationChannel *SnapshotOperationChannel
+	OperationChannel        *SnapshotOperationChannel
+	operationQueueSemaphore chan struct{}
 
 	// Checksum allows us to confirm integrity of the state so that when we're syncing with peers,
 	// we are confident that data wasn't tampered with.
@@ -395,6 +396,9 @@ func NewSnapshot(mainDb *badger.DB, mainDbDirectory string, snapshotBlockHeightP
 	timer := &Timer{}
 	timer.Initialize()
 
+	// TODO: Make this a flag.
+	const maxQueueSize = 20 // Set your maximum queue size here.
+
 	// Set the snapshot.
 	snap := &Snapshot{
 		SnapshotDb:                   snapshotDb,
@@ -403,6 +407,7 @@ func NewSnapshot(mainDb *badger.DB, mainDbDirectory string, snapshotBlockHeightP
 		AncestralFlushCounter:        uint64(0),
 		SnapshotBlockHeightPeriod:    snapshotBlockHeightPeriod,
 		OperationChannel:             operationChannel,
+		operationQueueSemaphore:      make(chan struct{}, maxQueueSize),
 		Checksum:                     checksum,
 		Migrations:                   migrations,
 		CurrentEpochSnapshotMetadata: metadata,
@@ -447,6 +452,7 @@ func (snap *Snapshot) Run() {
 				operation.blockHeight); err != nil {
 				glog.Errorf("Snapshot.Run: Problem adding snapshot chunk to the db")
 			}
+			<-snap.operationQueueSemaphore // Free up a slot in the operationQueueSemaphore
 
 		case SnapshotOperationChecksumAdd:
 			if err := snap.Checksum.AddOrRemoveBytesWithMigrations(operation.checksumKey, operation.checksumValue,
@@ -1206,6 +1212,14 @@ func (snap *Snapshot) GetSnapshotChunk(mainDb *badger.DB, prefix []byte, startKe
 	return snapshotEntriesBatch, mainDbFilled || ancestralDbFilled, false, nil
 }
 
+func currentMemory() uint64 {
+	var memStats runtime.MemStats
+	runtime.ReadMemStats(&memStats)
+
+	// Compare the current memory usage with your limit
+	return memStats.Alloc
+}
+
 // SetSnapshotChunk is called to put the snapshot chunk that we've got from a peer in the database.
 func (snap *Snapshot) SetSnapshotChunk(mainDb *badger.DB, mainDbMutex *deadlock.RWMutex,
 	chunk []*DBEntry, blockHeight uint64) error {
@@ -1224,6 +1238,7 @@ func (snap *Snapshot) SetSnapshotChunk(mainDb *badger.DB, mainDbMutex *deadlock.
 	}
 
 	mainDbMutex.Lock()
+
 	// We use badgerDb write batches as it's the fastest way to write multiple records to the db.
 	wb := mainDb.NewWriteBatch()
 	defer wb.Cancel()

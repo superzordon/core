@@ -679,11 +679,15 @@ func (srv *Server) GetSnapshot(pp *Peer) {
 			return
 		}
 	}
-
+	srv.snapshot.operationQueueSemaphore <- struct{}{} // This will block if operationQueueSemaphore is full
+	fmt.Printf("Getting snapshot")
 	// Now send a message to the peer to fetch the snapshot chunk.
 	pp.AddDeSoMessage(&MsgDeSoGetSnapshot{
 		SnapshotStartKey: lastReceivedKey,
 	}, false)
+
+	fmt.Printf("Server.GetSnapshot: Sending a GetSnapshot message to peer (%v) "+
+		"with Prefix (%v) and SnapshotStartEntry (%v)", pp, prefix, lastReceivedKey)
 
 	glog.V(2).Infof("Server.GetSnapshot: Sending a GetSnapshot message to peer (%v) "+
 		"with Prefix (%v) and SnapshotStartEntry (%v)", pp, prefix, lastReceivedKey)
