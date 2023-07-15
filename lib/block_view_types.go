@@ -971,7 +971,7 @@ func (op *UtxoOperation) RawEncodeWithoutMetadata(blockHeight uint64, skipMetada
 	// PrevCoinEntry
 	data = append(data, EncodeToBytes(blockHeight, op.PrevCoinEntry, skipMetadata...)...)
 
-	// Encode the PrevCoinRoyaltyCoinEntries map. We define a helper struct to store the <PKID, CoinEntry>
+	// Encode the PrevCoinRoyaltyCoinEntries map. We define a helper struct to store the <PublicKey, CoinEntry>
 	// objects as byte arrays. For coin entry, we first encode the struct, and then encode it as byte array.
 	type royaltyEntry struct {
 		pkid      []byte
@@ -1098,7 +1098,7 @@ func (op *UtxoOperation) RawEncodeWithoutMetadata(blockHeight uint64, skipMetada
 	// PrevTransactorDAOCoinLimitOrderEntry
 	data = append(data, EncodeToBytes(blockHeight, op.PrevTransactorDAOCoinLimitOrderEntry, skipMetadata...)...)
 
-	// PrevBalanceEntries. We translate the map[PKID]map[PKID]*BalanceEntry to a tuple <PKID, PKID, BalanceEntry>.
+	// PrevBalanceEntries. We translate the map[PublicKey]map[PublicKey]*BalanceEntry to a tuple <PublicKey, PublicKey, BalanceEntry>.
 	// Then we sort the bytes to make the ordering deterministic.
 	type prevBalance struct {
 		primaryPKID   []byte
@@ -3571,7 +3571,7 @@ func (fe *FollowEntry) GetEncoderType() EncoderType {
 
 // DeSoBalanceEntry stores the user's pkid and their corresponding DeSo balance nanos.
 type DeSoBalanceEntry struct {
-	PKID         *PKID
+	PublicKey    []byte
 	BalanceNanos uint64
 
 	// Whether or not this entry is deleted in the view.
@@ -3584,17 +3584,16 @@ func (desoBalanceEntry *DeSoBalanceEntry) IsDeleted() bool {
 
 func (desoBalanceEntry *DeSoBalanceEntry) RawEncodeWithoutMetadata(blockHeight uint64, skipMetadata ...bool) []byte {
 	var data []byte
-	data = append(data, EncodeToBytes(blockHeight, desoBalanceEntry.PKID, skipMetadata...)...)
+	data = append(data, EncodeByteArray(desoBalanceEntry.PublicKey)...)
 	data = append(data, UintToBuf(desoBalanceEntry.BalanceNanos)...)
 	return data
 }
 
 func (desoBalanceEntry *DeSoBalanceEntry) RawDecodeWithoutMetadata(blockHeight uint64, rr *bytes.Reader) error {
-	balancePKID := &PKID{}
-	if exist, err := DecodeFromBytes(balancePKID, rr); exist && err == nil {
-		desoBalanceEntry.PKID = balancePKID
-	} else if err != nil {
-		return errors.Wrapf(err, "DesoBalanceEntry.Decode: Problem reading PKID")
+	var err error
+	desoBalanceEntry.PublicKey, err = DecodeByteArray(rr)
+	if err != nil {
+		return errors.Wrapf(err, "DesoBalanceEntry.Decode: Problem reading PublicKey")
 	}
 
 	balanceNanos, err := ReadUvarint(rr)
@@ -4469,7 +4468,7 @@ type PKIDEntry struct {
 }
 
 func (pkid *PKIDEntry) String() string {
-	return fmt.Sprintf("< PKID: %s, OwnerPublicKey: %s >", PkToStringMainnet(pkid.PKID[:]), PkToStringMainnet(pkid.PublicKey))
+	return fmt.Sprintf("< PublicKey: %s, OwnerPublicKey: %s >", PkToStringMainnet(pkid.PKID[:]), PkToStringMainnet(pkid.PublicKey))
 }
 
 func (pkid *PKIDEntry) RawEncodeWithoutMetadata(blockHeight uint64, skipMetadata ...bool) []byte {
@@ -4488,7 +4487,7 @@ func (pkid *PKIDEntry) RawDecodeWithoutMetadata(blockHeight uint64, rr *bytes.Re
 	if exist, err := DecodeFromBytes(pkidCopy, rr); exist && err == nil {
 		pkid.PKID = pkidCopy
 	} else if err != nil {
-		return errors.Wrapf(err, "PKIDEntry.Decode: Problem decoding PKID")
+		return errors.Wrapf(err, "PKIDEntry.Decode: Problem decoding PublicKey")
 	}
 
 	pkid.PublicKey, err = DecodeByteArray(rr)

@@ -716,7 +716,7 @@ func (bav *UtxoView) _flushPKIDEntriesToDbWithTxn(txn *badger.Txn, blockHeight u
 		pubKeyCopy := make([]byte, btcec.PubKeyBytesLenCompressed)
 		copy(pubKeyCopy, pubKeyIter[:])
 
-		// Delete the existing mappings in the db for this PKID. They will be re-added
+		// Delete the existing mappings in the db for this PublicKey. They will be re-added
 		// if the corresponding entry in memory has isDeleted=false.
 		if err := DBDeletePKIDMappingsWithTxn(txn, bav.Snapshot,
 			pubKeyCopy, bav.Params, bav.EventManager, pkidEntry.isDeleted, bav.IsMempoolView); err != nil {
@@ -746,10 +746,10 @@ func (bav *UtxoView) _flushPKIDEntriesToDbWithTxn(txn *badger.Txn, blockHeight u
 					PkToString(pubKeyCopy, bav.Params))
 			}
 			// Sanity-check that the mapping in the public key map lines up with the mapping
-			// in the PKID map.
+			// in the PublicKey map.
 			if _, pkidEntryExists := bav.PKIDToPublicKey[*pkidEntry.PKID]; !pkidEntryExists {
 				return fmt.Errorf("_flushPKIDEntriesToDbWithTxn: Sanity-check failed. "+
-					"PKID %v for public key %v does not exist in PKIDToPublicKey map.",
+					"PublicKey %v for public key %v does not exist in PKIDToPublicKey map.",
 					PkToString(pkidEntry.PKID[:], bav.Params),
 					PkToString(pubKeyCopy, bav.Params))
 			}
@@ -776,7 +776,7 @@ func (bav *UtxoView) _flushProfileEntriesToDbWithTxn(txn *badger.Txn, blockHeigh
 		// Make a copy of the iterator since we take references to it below.
 		profilePKID := profilePKIDIter
 
-		// Delete the existing mappings in the db for this PKID. They will be re-added
+		// Delete the existing mappings in the db for this PublicKey. They will be re-added
 		// if the corresponding entry in memory has isDeleted=false.
 		if err := DBDeleteProfileEntryMappingsWithTxn(txn, bav.Snapshot,
 			&profilePKID, bav.Params, bav.EventManager, profileEntry.isDeleted, bav.IsMempoolView); err != nil {
@@ -799,11 +799,11 @@ func (bav *UtxoView) _flushProfileEntriesToDbWithTxn(txn *badger.Txn, blockHeigh
 			// we already deleted the entry above.
 		} else {
 			numPut++
-			// Get the PKID according to another map in the view and
+			// Get the PublicKey according to another map in the view and
 			// sanity-check that it lines up.
 			viewPKIDEntry := bav.GetPKIDForPublicKey(profileEntry.PublicKey)
 			if viewPKIDEntry == nil || viewPKIDEntry.isDeleted || *viewPKIDEntry.PKID != profilePKID {
-				return fmt.Errorf("_flushProfileEntriesToDbWithTxn: Sanity-check failed: PKID %v does "+
+				return fmt.Errorf("_flushProfileEntriesToDbWithTxn: Sanity-check failed: PublicKey %v does "+
 					"not exist in view mapping for profile with public key %v",
 					PkToString(profilePKID[:], bav.Params),
 					PkToString(profileEntry.PublicKey, bav.Params))

@@ -397,7 +397,7 @@ func NewSnapshot(mainDb *badger.DB, mainDbDirectory string, snapshotBlockHeightP
 	timer.Initialize()
 
 	// TODO: Make this a flag.
-	const maxQueueSize = 20 // Set your maximum queue size here.
+	const maxQueueSize = 10 // Set your maximum queue size here.
 
 	// Set the snapshot.
 	snap := &Snapshot{

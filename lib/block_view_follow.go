@@ -58,10 +58,10 @@ func (bav *UtxoView) _followEntriesForPubKey(publicKey []byte, getEntriesFollowi
 		return []*FollowEntry{}
 	}
 
-	// Look up the PKID for the public key. This should always be set.
+	// Look up the PublicKey for the public key. This should always be set.
 	pkidForPublicKey := bav.GetPKIDForPublicKey(publicKey)
 	if pkidForPublicKey == nil || pkidForPublicKey.isDeleted {
-		glog.Errorf("PKID for public key %v was nil or deleted on the view; this "+
+		glog.Errorf("PublicKey for public key %v was nil or deleted on the view; this "+
 			"should never happen", PkToString(publicKey, bav.Params))
 		return nil
 	}
@@ -109,10 +109,10 @@ func (bav *UtxoView) GetFollowEntriesForPublicKey(publicKey []byte, getEntriesFo
 		return []*FollowEntry{}, nil
 	}
 
-	// Look up the PKID for the public key. This should always be set.
+	// Look up the PublicKey for the public key. This should always be set.
 	pkidForPublicKey := bav.GetPKIDForPublicKey(publicKey)
 	if pkidForPublicKey == nil || pkidForPublicKey.isDeleted {
-		return nil, fmt.Errorf("GetFollowEntriesForPublicKey: PKID for public key %v was nil "+
+		return nil, fmt.Errorf("GetFollowEntriesForPublicKey: PublicKey for public key %v was nil "+
 			"or deleted on the view; this should never happen",
 			PkToString(publicKey, bav.Params))
 	}
@@ -339,13 +339,13 @@ func (bav *UtxoView) _disconnectFollow(
 	// Verify that the sender and recipient in the entry match the TxnMeta as
 	// a sanity check.
 	if !reflect.DeepEqual(followEntry.FollowerPKID, followerPKID.PKID) {
-		return fmt.Errorf("_disconnectFollow: Follower PKID on "+
-			"FollowEntry was %s but the PKID looked up from the txn was %s",
+		return fmt.Errorf("_disconnectFollow: Follower PublicKey on "+
+			"FollowEntry was %s but the PublicKey looked up from the txn was %s",
 			PkToString(followEntry.FollowerPKID[:], bav.Params),
 			PkToString(followerPKID.PKID[:], bav.Params))
 	}
 	if !reflect.DeepEqual(followEntry.FollowedPKID, followedPKID.PKID) {
-		return fmt.Errorf("_disconnectFollow: Followed PKID on "+
+		return fmt.Errorf("_disconnectFollow: Followed PublicKey on "+
 			"FollowEntry was %s but the FollowedPKID looked up from the txn was %s",
 			PkToString(followEntry.FollowedPKID[:], bav.Params),
 			PkToString(followedPKID.PKID[:], bav.Params))

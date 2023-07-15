@@ -275,7 +275,7 @@ func (bav *UtxoView) GetPostEntryReaderState(
 	receiverPKID := bav.GetPKIDForPublicKey(postEntry.PosterPublicKey)
 	if senderPKID == nil || receiverPKID == nil {
 		glog.V(2).Infof(
-			"GetPostEntryReaderState: Could not find PKID for reader PK: %s or poster PK: %s",
+			"GetPostEntryReaderState: Could not find PublicKey for reader PK: %s or poster PK: %s",
 			PkToString(readerPK, bav.Params), PkToString(postEntry.PosterPublicKey, bav.Params))
 	} else {
 		diamondKey := MakeDiamondKey(senderPKID.PKID, receiverPKID.PKID, postEntry.PostHash)

@@ -251,7 +251,7 @@ func (bav *UtxoView) GetPublicKeyForPKID(pkidArg *PKID) []byte {
 func (bav *UtxoView) _setPKIDMappings(pkidEntry *PKIDEntry) {
 	// This function shouldn't be called with nil.
 	if pkidEntry == nil {
-		glog.Errorf("_setPKIDMappings: Called with nil PKID; " +
+		glog.Errorf("_setPKIDMappings: Called with nil PublicKey; " +
 			"this should never happen.")
 		return
 	}
@@ -271,7 +271,7 @@ func (bav *UtxoView) _deletePKIDMappings(pkid *PKIDEntry) {
 }
 
 func (bav *UtxoView) GetProfileEntryForPublicKey(publicKey []byte) *ProfileEntry {
-	// Get the PKID for the public key provided. This should never return nil if a
+	// Get the PublicKey for the public key provided. This should never return nil if a
 	// proper public key is provided.
 	pkidEntry := bav.GetPKIDForPublicKey(publicKey)
 	if pkidEntry == nil || pkidEntry.isDeleted {
@@ -317,7 +317,7 @@ func (bav *UtxoView) _setProfileEntryMappings(profileEntry *ProfileEntry) {
 		return
 	}
 
-	// Look up the current PKID for the profile. Never nil because we create the entry if it doesn't exist
+	// Look up the current PublicKey for the profile. Never nil because we create the entry if it doesn't exist
 	pkidEntry := bav.GetPKIDForPublicKey(profileEntry.PublicKey)
 
 	// Add a mapping for the profile.
@@ -849,7 +849,7 @@ func (bav *UtxoView) _connectSwapIdentity(
 	// ProfileEntry mappings because everything other than the embedded public key stays
 	// the same (basically the public key is the only thing that's de-normalized that we
 	// need to manually adjust). Note that we must do this lookup *before* we swap the
-	// PKID's or else we're get opposite profiles back.
+	// PublicKey's or else we're get opposite profiles back.
 	fromProfileEntry := bav.GetProfileEntryForPublicKey(fromPublicKey)
 	if fromProfileEntry != nil && !fromProfileEntry.isDeleted {
 		fromProfileEntry.PublicKey = toPublicKey
@@ -859,7 +859,7 @@ func (bav *UtxoView) _connectSwapIdentity(
 		toProfileEntry.PublicKey = fromPublicKey
 	}
 
-	// Get the existing PKID mappings. These are guaranteed to be set (they default to
+	// Get the existing PublicKey mappings. These are guaranteed to be set (they default to
 	// the existing public key if they are unset).
 	oldFromPKIDEntry := bav.GetPKIDForPublicKey(fromPublicKey)
 	if oldFromPKIDEntry == nil || oldFromPKIDEntry.isDeleted {
@@ -873,28 +873,28 @@ func (bav *UtxoView) _connectSwapIdentity(
 	}
 
 	// At this point, we are certain that the *from* and the *to* public keys
-	// have valid PKID's.
+	// have valid PublicKey's.
 
-	// Create copies of the old PKID's so we can safely update the mappings.
+	// Create copies of the old PublicKey's so we can safely update the mappings.
 	newFromPKIDEntry := *oldFromPKIDEntry
 	newToPKIDEntry := *oldToPKIDEntry
 
-	// Swap the PKID's on the entry copies.
+	// Swap the PublicKey's on the entry copies.
 	newFromPKIDEntry.PKID = oldToPKIDEntry.PKID
 	newToPKIDEntry.PKID = oldFromPKIDEntry.PKID
 
-	// Delete the old mappings for the *from* and *to* PKID's. This isn't really needed
+	// Delete the old mappings for the *from* and *to* PublicKey's. This isn't really needed
 	// because the calls to _setPKIDMappings below will undo the deletions we just did,
 	// but we do it to maintain consistency with other functions.
 	bav._deletePKIDMappings(oldFromPKIDEntry)
 	bav._deletePKIDMappings(oldToPKIDEntry)
 
-	// Set the new mappings for the *from* and *to* PKID's.
+	// Set the new mappings for the *from* and *to* PublicKey's.
 	bav._setPKIDMappings(&newFromPKIDEntry)
 	bav._setPKIDMappings(&newToPKIDEntry)
 
-	// Postgres doesn't have a concept of PKID Mappings. Instead, we need to save an empty
-	// profile with the correct PKID and public key
+	// Postgres doesn't have a concept of PublicKey Mappings. Instead, we need to save an empty
+	// profile with the correct PublicKey and public key
 	if bav.Postgres != nil {
 		if fromProfileEntry == nil {
 			bav._setProfileEntryMappings(&ProfileEntry{
@@ -1108,7 +1108,7 @@ func (bav *UtxoView) _disconnectSwapIdentity(
 	txMeta := currentTxn.TxnMeta.(*SwapIdentityMetadataa)
 
 	// Swap the public keys within the profiles back. Note that this *must* be done
-	// before the swapping of the PKID mappings occurs. Not doing this would cause
+	// before the swapping of the PublicKey mappings occurs. Not doing this would cause
 	// the profiles to be fetched inconsistently from the DB.
 	fromProfileEntry := bav.GetProfileEntryForPublicKey(txMeta.FromPublicKey)
 	if fromProfileEntry != nil && !fromProfileEntry.isDeleted {
@@ -1135,7 +1135,7 @@ func (bav *UtxoView) _disconnectSwapIdentity(
 	bav._deletePKIDMappings(oldFromPKIDEntry)
 	bav._deletePKIDMappings(oldToPKIDEntry)
 
-	// Set the new mappings for the *from* and *to* PKID's.
+	// Set the new mappings for the *from* and *to* PublicKey's.
 	bav._setPKIDMappings(&newFromPKIDEntry)
 	bav._setPKIDMappings(&newToPKIDEntry)
 

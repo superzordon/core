@@ -3689,7 +3689,7 @@ func (bc *Blockchain) CreateDAOCoinLimitOrderTxn(
 				}
 
 				// Initialize map tracking total $DESO consumed if the matching
-				// order transactor PKID hasn't been seen before.
+				// order transactor PublicKey hasn't been seen before.
 				if _, exists := desoNanosToConsumeMap[*matchingOrder.TransactorPKID]; !exists {
 					desoNanosToConsumeMap[*matchingOrder.TransactorPKID] = 0
 				}

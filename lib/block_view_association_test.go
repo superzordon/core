@@ -2607,7 +2607,7 @@ func _testAssociationsWithDerivedKey(t *testing.T) {
 				"		[\n"+
 				"			Association Class: User\n"+
 				"			Association Type: REACTION\n"+
-				"			App PKID: "+m1Pub+"\n"+
+				"			App PublicKey: "+m1Pub+"\n"+
 				"			Operation: Create\n"+
 				"			Transaction Count: 1\n"+
 				"		]\n",
@@ -2626,7 +2626,7 @@ func _testAssociationsWithDerivedKey(t *testing.T) {
 				"		[\n"+
 				"			Association Class: User\n"+
 				"			Association Type: Any\n"+
-				"			App PKID: Any\n"+
+				"			App PublicKey: Any\n"+
 				"			Operation: Any\n"+
 				"			Transaction Count: 1\n"+
 				"		]\n",

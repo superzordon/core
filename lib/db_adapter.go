@@ -279,7 +279,7 @@ func (adapter *DbAdapter) GetMatchingDAOCoinLimitOrders(inputOrder *DAOCoinLimit
 }
 
 //
-// PKID
+// PublicKey
 //
 
 func (adapter *DbAdapter) GetPKIDForPublicKey(pkBytes []byte) *PKID {

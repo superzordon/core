@@ -57,7 +57,7 @@ func (pkid *PKID) RawEncodeWithoutMetadata(blockHeight uint64, skipMetadata ...b
 func (pkid *PKID) RawDecodeWithoutMetadata(blockHeight uint64, rr *bytes.Reader) error {
 	pkidBytes, err := DecodeByteArray(rr)
 	if err != nil {
-		return errors.Wrapf(err, "PKID.Decode: Problem reading PKID")
+		return errors.Wrapf(err, "PublicKey.Decode: Problem reading PublicKey")
 	}
 	copy(pkid[:], pkidBytes)
 	return nil
@@ -78,7 +78,7 @@ func (pkid *PKID) ToBytes() []byte {
 func (pkid *PKID) FromBytes(rr *bytes.Reader) error {
 	pkidBytes := make([]byte, PublicKeyLenCompressed)
 	if _, err := io.ReadFull(rr, pkidBytes); err != nil {
-		return errors.Wrapf(err, "PKID.FromBytes: Problem reading PKID")
+		return errors.Wrapf(err, "PublicKey.FromBytes: Problem reading PublicKey")
 	}
 	copy(pkid[:], pkidBytes)
 	return nil

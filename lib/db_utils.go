@@ -154,7 +154,7 @@ type DBPrefixes struct {
 	// For username, we set the PKID as a value since the username is not fixed width.
 	// We always lowercase usernames when using them as map keys in order to make
 	// all uniqueness checks case-insensitive
-	// <prefix_id, username> -> <PKID>
+	// <prefix_id, username> -> <PublicKey>
 	PrefixProfileUsernameToPKID []byte `prefix_id:"[25]" is_state:"true"`
 	// This allows us to sort the profiles by the value of their coin (since
 	// the amount of DeSo locked in a profile is proportional to coin price).
@@ -184,7 +184,7 @@ type DBPrefixes struct {
 	PrefixPosterPublicKeyTimestampPostHash []byte `prefix_id:"[35]" is_state:"true"`
 	// If no mapping exists for a particular public key, then the PKID is simply
 	// the public key itself.
-	// <prefix_id, [33]byte> -> <PKID [33]byte>
+	// <prefix_id, [33]byte> -> <PublicKey [33]byte>
 	PrefixPublicKeyToPKID []byte `prefix_id:"[36]" is_state:"true" core_state:"true"`
 	// <prefix_id, PKID [33]byte> -> <PublicKey [33]byte>
 	PrefixPKIDToPublicKey []byte `prefix_id:"[37]" is_state:"true"`
@@ -460,7 +460,7 @@ type DBPrefixes struct {
 	// The Minor/Major distinction is used to deterministically map the two accessGroupIds of message's sender/recipient
 	// into a single pair based on the lexicographical ordering of the two accessGroupIds. This is done to ensure that
 	// both sides of the conversation have the same key for the same conversation, and we can store just a single message.
-	PrefixDmMessagesIndex []byte `prefix_id:"[75]" is_state:"true"`
+	PrefixDmMessagesIndex []byte `prefix_id:"[75]" is_state:"true" core_state:"true"`
 
 	// PrefixDmThreadIndex is modified by the NewMessage transaction and is used to store a DmThreadEntry
 	// for each existing dm thread. It answers the question: "Give me all the threads for a particular user."
@@ -1226,9 +1226,9 @@ func DBGetPKIDEntryForPublicKeyWithTxn(txn *badger.Txn, snap *Snapshot, publicKe
 	pkidBytes, err := DBGetWithTxn(txn, snap, append(prefix, publicKey...))
 
 	if err != nil {
-		// If we don't have a mapping from public key to PKID in the db,
-		// then we use the public key itself as the PKID. Doing this makes
-		// it so that the PKID is generally the *first* public key that the
+		// If we don't have a mapping from public key to PublicKey in the db,
+		// then we use the public key itself as the PublicKey. Doing this makes
+		// it so that the PublicKey is generally the *first* public key that the
 		// user ever associated with a particular piece of data.
 		return &PKIDEntry{
 			PKID:      PublicKeyToPKID(publicKey),
@@ -1236,7 +1236,7 @@ func DBGetPKIDEntryForPublicKeyWithTxn(txn *badger.Txn, snap *Snapshot, publicKe
 		}
 	}
 
-	// If we get here then it means we actually had a PKID in the DB.
+	// If we get here then it means we actually had a PublicKey in the DB.
 	// So return that pkid.
 	pkidEntryObj := &PKIDEntry{}
 	rr := bytes.NewReader(pkidBytes)
@@ -1282,8 +1282,8 @@ func DBGetPublicKeyForPKID(db *badger.DB, snap *Snapshot, pkidd *PKID) []byte {
 func DBPutPKIDMappingsWithTxn(txn *badger.Txn, snap *Snapshot, blockHeight uint64,
 	publicKey []byte, pkidEntry *PKIDEntry, params *DeSoParams, eventManager *EventManager, isMempoolTx bool) error {
 
-	// If the PKID entry is identical to the public key, there's no point in saving it in the DB.
-	// All functions fetching PKID will already return the public key if PKID was unset.
+	// If the PublicKey entry is identical to the public key, there's no point in saving it in the DB.
+	// All functions fetching PublicKey will already return the public key if PublicKey was unset.
 	if reflect.DeepEqual(publicKey, pkidEntry.PKID.ToBytes()) {
 		return nil
 	}
@@ -1511,8 +1511,7 @@ func _decodeDbKeyForPublicKeyToDeSoBalanceNanosMapping(key []byte, value []byte)
 		balanceNanos = DecodeUint64(value)
 	}
 	balanceEntry := &DeSoBalanceEntry{}
-	balanceEntry.PKID = &PKID{}
-	copy(balanceEntry.PKID[:], key[1:])
+	balanceEntry.PublicKey = key[1:]
 	balanceEntry.BalanceNanos = balanceNanos
 	return balanceEntry, nil
 }
@@ -3733,11 +3732,11 @@ func DbPutFollowMappingsWithTxn(txn *badger.Txn, snap *Snapshot,
 	followerPKID *PKID, followedPKID *PKID, eventManager *EventManager, isMempoolTx bool) error {
 
 	if len(followerPKID) != btcec.PubKeyBytesLenCompressed {
-		return fmt.Errorf("DbPutFollowMappingsWithTxn: Follower PKID "+
+		return fmt.Errorf("DbPutFollowMappingsWithTxn: Follower PublicKey "+
 			"length %d != %d", len(followerPKID[:]), btcec.PubKeyBytesLenCompressed)
 	}
 	if len(followedPKID) != btcec.PubKeyBytesLenCompressed {
-		return fmt.Errorf("DbPutFollowMappingsWithTxn: Followed PKID "+
+		return fmt.Errorf("DbPutFollowMappingsWithTxn: Followed PublicKey "+
 			"length %d != %d", len(followerPKID), btcec.PubKeyBytesLenCompressed)
 	}
 
@@ -3865,7 +3864,7 @@ func DbGetPKIDsFollowingYou(handle *badger.DB, yourPKID *PKID) (
 func DbGetPubKeysYouFollow(handle *badger.DB, snap *Snapshot, yourPubKey []byte) (
 	_pubKeys [][]byte, _err error) {
 
-	// Get the PKID for the pub key
+	// Get the PublicKey for the pub key
 	yourPKID := DBGetPKIDEntryForPublicKey(handle, snap, yourPubKey)
 	followPKIDs, err := DbGetPKIDsYouFollow(handle, yourPKID.PKID)
 	if err != nil {
@@ -3886,7 +3885,7 @@ func DbGetPubKeysYouFollow(handle *badger.DB, snap *Snapshot, yourPubKey []byte)
 func DbGetPubKeysFollowingYou(handle *badger.DB, snap *Snapshot, yourPubKey []byte) (
 	_pubKeys [][]byte, _err error) {
 
-	// Get the PKID for the pub key
+	// Get the PublicKey for the pub key
 	yourPKID := DBGetPKIDEntryForPublicKey(handle, snap, yourPubKey)
 	followPKIDs, err := DbGetPKIDsFollowingYou(handle, yourPKID.PKID)
 	if err != nil {
@@ -3980,11 +3979,11 @@ func DbPutDiamondMappingsWithTxn(txn *badger.Txn, snap *Snapshot, blockHeight ui
 	diamondEntry *DiamondEntry, eventManager *EventManager, isMempoolTx bool) error {
 
 	if len(diamondEntry.ReceiverPKID) != btcec.PubKeyBytesLenCompressed {
-		return fmt.Errorf("DbPutDiamondMappingsWithTxn: Receiver PKID "+
+		return fmt.Errorf("DbPutDiamondMappingsWithTxn: Receiver PublicKey "+
 			"length %d != %d", len(diamondEntry.ReceiverPKID[:]), btcec.PubKeyBytesLenCompressed)
 	}
 	if len(diamondEntry.SenderPKID) != btcec.PubKeyBytesLenCompressed {
-		return fmt.Errorf("DbPutDiamondMappingsWithTxn: Sender PKID "+
+		return fmt.Errorf("DbPutDiamondMappingsWithTxn: Sender PublicKey "+
 			"length %d != %d", len(diamondEntry.SenderPKID), btcec.PubKeyBytesLenCompressed)
 	}
 
@@ -4134,27 +4133,27 @@ func DbGetPKIDsThatDiamondedYouMap(handle *badger.DB, yourPKID *PKID, fetchYouDi
 		// Note: The code below is mainly just sanity-checking. Checking the key isn't actually
 		// needed in this function, since all the information is duplicated in the entry.
 
-		// Chop out the diamond sender PKID.
+		// Chop out the diamond sender PublicKey.
 		diamondSenderPKIDBytes := keyBytes[diamondSenderStartIdx:diamondSenderEndIdx]
 		diamondSenderPKID := &PKID{}
 		copy(diamondSenderPKID[:], diamondSenderPKIDBytes)
 		// It must match what's in the DiamondEntry
 		if !reflect.DeepEqual(diamondSenderPKID, diamondEntry.SenderPKID) {
 			return nil, fmt.Errorf(
-				"DbGetPKIDsThatDiamondedYouMap: Sender PKID in DB %v did not "+
-					"match Sender PKID in DiamondEntry %v; this should never happen",
+				"DbGetPKIDsThatDiamondedYouMap: Sender PublicKey in DB %v did not "+
+					"match Sender PublicKey in DiamondEntry %v; this should never happen",
 				PkToStringBoth(diamondSenderPKID[:]), PkToStringBoth(diamondEntry.SenderPKID[:]))
 		}
 
-		// Chop out the diamond receiver PKID
+		// Chop out the diamond receiver PublicKey
 		diamondReceiverPKIDBytes := keyBytes[diamondReceiverStartIdx:diamondReceiverEndIdx]
 		diamondReceiverPKID := &PKID{}
 		copy(diamondReceiverPKID[:], diamondReceiverPKIDBytes)
 		// It must match what's in the DiamondEntry
 		if !reflect.DeepEqual(diamondReceiverPKID, diamondEntry.ReceiverPKID) {
 			return nil, fmt.Errorf(
-				"DbGetPKIDsThatDiamondedYouMap: Receiver PKID in DB %v did not "+
-					"match Receiver PKID in DiamondEntry %v; this should never happen",
+				"DbGetPKIDsThatDiamondedYouMap: Receiver PublicKey in DB %v did not "+
+					"match Receiver PublicKey in DiamondEntry %v; this should never happen",
 				PkToStringBoth(diamondReceiverPKID[:]), PkToStringBoth(diamondEntry.ReceiverPKID[:]))
 		}
 
@@ -4207,15 +4206,15 @@ func DbGetDiamondEntriesForSenderToReceiver(handle *badger.DB, receiverPKID *PKI
 		// Note: The code below is mainly just sanity-checking. Checking the key isn't actually
 		// needed in this function, since all the information is duplicated in the entry.
 
-		// Chop out the diamond sender PKID.
+		// Chop out the diamond sender PublicKey.
 		diamondSenderPKIDBytes := keyBytes[1+btcec.PubKeyBytesLenCompressed : 1+2*btcec.PubKeyBytesLenCompressed]
 		diamondSenderPKID := &PKID{}
 		copy(diamondSenderPKID[:], diamondSenderPKIDBytes)
 		// It must match what's in the DiamondEntry
 		if !reflect.DeepEqual(diamondSenderPKID, diamondEntry.SenderPKID) {
 			return nil, fmt.Errorf(
-				"DbGetDiamondEntriesForGiverToReceiver: Sender PKID in DB %v did not "+
-					"match Sender PKID in DiamondEntry %v; this should never happen",
+				"DbGetDiamondEntriesForGiverToReceiver: Sender PublicKey in DB %v did not "+
+					"match Sender PublicKey in DiamondEntry %v; this should never happen",
 				PkToStringBoth(diamondSenderPKID[:]), PkToStringBoth(diamondEntry.SenderPKID[:]))
 		}
 
@@ -8384,7 +8383,7 @@ func DBDeleteNFTBidMappings(handle *badger.DB, snap *Snapshot, nftBidKey *NFTBid
 
 func DBPutNFTBidEntryMappingsWithTxn(txn *badger.Txn, snap *Snapshot, nftBidEntry *NFTBidEntry, eventManager *EventManager, isMempoolTx bool) error {
 	// We store two indexes for NFT bids. (1) sorted by bid amount nanos in the key and
-	// (2) sorted by the bidder PKID. Both come in handy.
+	// (2) sorted by the bidder PublicKey. Both come in handy.
 
 	// Put the first index --> []byte{} (no data needs to be stored since it all info is in the key)
 	if err := DBSetWithTxn(txn, snap,
@@ -8422,7 +8421,7 @@ func DBGetNFTBidEntriesForPKID(handle *badger.DB, bidderPKID *PKID) (_nftBidEntr
 		bidderPKIDLength := len(bidderPKID[:])
 		for ii, keyFound := range keysFound {
 
-			postHashStartIdx := 1 + bidderPKIDLength           // The length of prefix + length of PKID
+			postHashStartIdx := 1 + bidderPKIDLength           // The length of prefix + length of PublicKey
 			postHashEndIdx := postHashStartIdx + HashSizeBytes // Add the length of the bid amount (uint64).
 
 			// Cut the bid amount out of the key and decode.
@@ -8467,7 +8466,7 @@ func DBGetNFTBidEntries(handle *badger.DB, nftPostHash *BlockHash, serialNumber 
 			// Cut the pkid bytes out of the keys
 			bidderPKIDBytes := keyFound[bidAmountEndIdx:]
 
-			// Construct the bidder PKID.
+			// Construct the bidder PublicKey.
 			bidderPKID := PublicKeyToPKID(bidderPKIDBytes)
 
 			currentEntry := &NFTBidEntry{
@@ -8495,7 +8494,7 @@ func DBGetNFTBidEntriesPaginated(
 	if startEntry != nil {
 		startKey = _dbKeyForNFTPostHashSerialNumberBidNanosBidderPKID(startEntry)
 	}
-	// The key length consists of: (1 prefix byte) + (BlockHash) + (2 x uint64) + (PKID)
+	// The key length consists of: (1 prefix byte) + (BlockHash) + (2 x uint64) + (PublicKey)
 	maxKeyLen := 1 + HashSizeBytes + 16 + btcec.PubKeyBytesLenCompressed
 	keysBytes, _, _ := DBGetPaginatedKeysAndValuesForPrefix(
 		handle,
@@ -8748,7 +8747,7 @@ func DBDeleteProfileEntryMappingsWithTxn(txn *badger.Txn, snap *Snapshot,
 	// When a profile exists, delete the pkid mapping for the profile.
 	if err := DBDeleteWithTxn(txn, snap, _dbKeyForPKIDToProfileEntry(pkid), eventManager, entryIsDeleted, isMempoolTx); err != nil {
 		return errors.Wrapf(err, "DbDeleteProfileEntryMappingsWithTxn: Deleting "+
-			"profile mapping for profile PKID: %v",
+			"profile mapping for profile PublicKey: %v",
 			PkToString(pkid[:], params))
 	}
 
@@ -8774,7 +8773,7 @@ func DBDeleteProfileEntryMappingsWithTxn(txn *badger.Txn, snap *Snapshot,
 func DBPutProfileEntryMappingsWithTxn(txn *badger.Txn, snap *Snapshot, blockHeight uint64,
 	profileEntry *ProfileEntry, pkid *PKID, params *DeSoParams, eventManager *EventManager, isMempoolTx bool) error {
 
-	// Set the main PKID -> profile entry mapping.
+	// Set the main PublicKey -> profile entry mapping.
 	if err := DBSetWithTxn(txn, snap, _dbKeyForPKIDToProfileEntry(pkid),
 		EncodeToBytes(blockHeight, profileEntry), eventManager, isMempoolTx); err != nil {
 
@@ -9384,7 +9383,7 @@ func DBGetPaginatedProfilesByDeSoLocked(
 	startProfilePubKeyy []byte, numToFetch int, fetchProfileEntries bool) (
 	_profilePublicKeys [][]byte, _profileEntries []*ProfileEntry, _err error) {
 
-	// Convert the start public key to a PKID.
+	// Convert the start public key to a PublicKey.
 	pkidEntry := DBGetPKIDEntryForPublicKey(db, snap, startProfilePubKeyy)
 
 	startProfilePrefix := append([]byte{}, Prefixes.PrefixCreatorDeSoLockedNanosCreatorPKID...)

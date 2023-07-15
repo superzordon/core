@@ -511,7 +511,7 @@ func (bav *UtxoView) extractAdditionalRoyaltyMap(
 					RuleErrorAdditionalRoyaltyPubKeyMustBeValid,
 					"Error parsing public key: %v, %v", PkToStringBoth(pkBytess[:]), err)
 			}
-			// Set the PKID on the map
+			// Set the PublicKey on the map
 			pkid := bav.GetPKIDForPublicKey(pkBytess[:])
 			additionalRoyalties[*pkid.PKID] = bps
 
@@ -1706,7 +1706,7 @@ func (bav *UtxoView) _connectNFTBid(
 	nftEntry := bav.GetNFTEntryForNFTKey(&nftKey)
 	bidderPKID := bav.GetPKIDForPublicKey(txn.PublicKey)
 	if bidderPKID == nil || bidderPKID.isDeleted {
-		return 0, 0, nil, fmt.Errorf("_connectNFTBid: PKID for bidder public "+
+		return 0, 0, nil, fmt.Errorf("_connectNFTBid: PublicKey for bidder public "+
 			"key %v doesn't exist; this should never happen", string(txn.PublicKey))
 	}
 
@@ -1897,12 +1897,12 @@ func (bav *UtxoView) _connectNFTTransfer(
 		return 0, 0, nil, RuleErrorNFTTransferByNonOwner
 	}
 
-	// Fetch the receiver's PKID and make sure it exists.
+	// Fetch the receiver's PublicKey and make sure it exists.
 	receiverPKID := bav.GetPKIDForPublicKey(txMeta.ReceiverPublicKey)
-	// Sanity check that we found a PKID entry for these pub keys (should never fail).
+	// Sanity check that we found a PublicKey entry for these pub keys (should never fail).
 	if receiverPKID == nil || receiverPKID.isDeleted {
 		return 0, 0, nil, fmt.Errorf(
-			"_connectNFTTransfer: Found nil or deleted PKID for receiver, this should never "+
+			"_connectNFTTransfer: Found nil or deleted PublicKey for receiver, this should never "+
 				"happen. Receiver pubkey: %v", PkToStringMainnet(txMeta.ReceiverPublicKey))
 	}
 
@@ -2190,7 +2190,7 @@ func (bav *UtxoView) _disconnectCreateNFT(
 	// Delete the NFT entries.
 	posterPKID := bav.GetPKIDForPublicKey(existingPostEntry.PosterPublicKey)
 	if posterPKID == nil || posterPKID.isDeleted {
-		return fmt.Errorf("_disconnectCreateNFT: PKID for poster public key %v doesn't exist; this should never happen", string(existingPostEntry.PosterPublicKey))
+		return fmt.Errorf("_disconnectCreateNFT: PublicKey for poster public key %v doesn't exist; this should never happen", string(existingPostEntry.PosterPublicKey))
 	}
 	for ii := uint64(1); ii <= txMeta.NumCopies; ii++ {
 		nftEntry := &NFTEntry{
@@ -2503,7 +2503,7 @@ func (bav *UtxoView) _disconnectNFTBid(
 	// Get the NFTBidEntry corresponding to this txn.
 	bidderPKID := bav.GetPKIDForPublicKey(currentTxn.PublicKey)
 	if bidderPKID == nil || bidderPKID.isDeleted {
-		return fmt.Errorf("_disconnectNFTBid: PKID for bidder public key %v doesn't exist; this should never "+
+		return fmt.Errorf("_disconnectNFTBid: PublicKey for bidder public key %v doesn't exist; this should never "+
 			"happen", string(currentTxn.PublicKey))
 	}
 
@@ -2570,7 +2570,7 @@ func (bav *UtxoView) _disconnectNFTTransfer(
 			"this should never happen.")
 	}
 
-	// Sanity check the old NFT entry PKID / PostHash / SerialNumber.
+	// Sanity check the old NFT entry PublicKey / PostHash / SerialNumber.
 	updaterPKID := bav.GetPKIDForPublicKey(currentTxn.PublicKey)
 	if updaterPKID == nil || updaterPKID.isDeleted {
 		return fmt.Errorf("_disconnectNFTTransfer: non-existent updaterPKID: %s",
@@ -2636,7 +2636,7 @@ func (bav *UtxoView) _disconnectAcceptNFTTransfer(
 			"this should never happen.")
 	}
 
-	// Sanity check the old NFT entry PKID / PostHash / SerialNumber.
+	// Sanity check the old NFT entry PublicKey / PostHash / SerialNumber.
 	updaterPKID := bav.GetPKIDForPublicKey(currentTxn.PublicKey)
 	if updaterPKID == nil || updaterPKID.isDeleted {
 		return fmt.Errorf("_disconnectAcceptNFTTransfer: non-existent updaterPKID: %s",
@@ -2708,7 +2708,7 @@ func (bav *UtxoView) _disconnectBurnNFT(
 			"this should never happen.")
 	}
 
-	// Sanity check the old NFT entry PKID / PostHash / SerialNumber.
+	// Sanity check the old NFT entry PublicKey / PostHash / SerialNumber.
 	updaterPKID := bav.GetPKIDForPublicKey(currentTxn.PublicKey)
 	if updaterPKID == nil || updaterPKID.isDeleted {
 		return fmt.Errorf("_disconnectBurnNFT: non-existent updaterPKID: %s",

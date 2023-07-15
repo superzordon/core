@@ -149,7 +149,7 @@ func (bav *UtxoView) _sanityCheckLimitOrderMoneyPrinting(
 	// We include a more hardcore balance check to make sure that we are not printing money.
 	// For each item in our prevBalance map, we go through it and verify that the new balance
 	// minus the previous balance sums to <= zero. First, we create a finalDeltasMap which maps a
-	// coin creatorPKID to the delta in base units for that particular PKID in this transaction.
+	// coin creatorPKID to the delta in base units for that particular PublicKey in this transaction.
 	finalDeltasMap := make(map[PKID]*big.Int)
 
 	// Next, we loop through all the original coin base unit balances in prevBalances and
@@ -219,7 +219,7 @@ func (bav *UtxoView) _connectDAOCoinLimitOrder(
 		return 0, 0, nil, err
 	}
 
-	// Get the transactor PKID and validate it.
+	// Get the transactor PublicKey and validate it.
 	transactorPKIDEntry := bav.GetPKIDForPublicKey(txn.PublicKey)
 	if transactorPKIDEntry == nil || transactorPKIDEntry.isDeleted {
 		return 0, 0, nil, fmt.Errorf(
@@ -358,8 +358,8 @@ func (bav *UtxoView) _connectDAOCoinLimitOrder(
 	// use these maps to track everything until the very end. Note however that we
 	// DO update orders as we go.
 	//
-	// The schema is (user PKID, dao coin PKID) -> balance change
-	// Note that DESO is just dao coin PKID = ZeroPKID
+	// The schema is (user PublicKey, dao coin PublicKey) -> balance change
+	// Note that DESO is just dao coin PublicKey = ZeroPKID
 	balanceDeltas := make(map[PKID]map[PKID]*big.Int)
 
 	// Now, we find all the orders that we can match against the seller, and adjust the
@@ -467,7 +467,7 @@ func (bav *UtxoView) _connectDAOCoinLimitOrder(
 			}
 			if transactorSellCoinBalanceBaseUnits.Lt(coinBaseUnitsSoldByTransactor) {
 				return 0, 0, nil, fmt.Errorf("Transactor "+
-					"balance %v is not enough to cover the amount they are selling %v of coin PKID %v",
+					"balance %v is not enough to cover the amount they are selling %v of coin PublicKey %v",
 					transactorSellCoinBalanceBaseUnits, coinBaseUnitsSoldByTransactor,
 					sellCoinPKIDEntry.PKID)
 			}
@@ -778,7 +778,7 @@ func (bav *UtxoView) _connectDAOCoinLimitOrder(
 		if balanceDelta.Cmp(big.NewInt(0)) != 0 {
 			return 0, 0, nil, errors.Wrapf(
 				RuleErrorDAOCoinLimitOrderBalanceDeltasNonZero,
-				"_connectDAOCoinLimitOrder: Balance for PKID %v is %v", creatorPKIDIter, balanceDelta.String(),
+				"_connectDAOCoinLimitOrder: Balance for PublicKey %v is %v", creatorPKIDIter, balanceDelta.String(),
 			)
 		}
 	}
@@ -1544,10 +1544,10 @@ func (bav *UtxoView) GetAllDAOCoinLimitOrdersForThisDAOCoinPair(
 	// This function is used by the API to construct all open
 	// orders for the input buying and selling DAO coins.
 	if buyingDAOCoinCreatorPKID == nil {
-		return nil, errors.Errorf("GetAllDAOCoinLimitOrdersForThisDAOCoinPair: Called with nil buy coin PKID; this should never happen")
+		return nil, errors.Errorf("GetAllDAOCoinLimitOrdersForThisDAOCoinPair: Called with nil buy coin PublicKey; this should never happen")
 	}
 	if sellingDAOCoinCreatorPKID == nil {
-		return nil, errors.Errorf("GetAllDAOCoinLimitOrdersForThisDAOCoinPair: Called with nil sell coin PKID; this should never happen")
+		return nil, errors.Errorf("GetAllDAOCoinLimitOrdersForThisDAOCoinPair: Called with nil sell coin PublicKey; this should never happen")
 	}
 
 	outputEntries := []*DAOCoinLimitOrderEntry{}
@@ -1587,7 +1587,7 @@ func (bav *UtxoView) GetAllDAOCoinLimitOrdersForThisDAOCoinPair(
 func (bav *UtxoView) GetAllDAOCoinLimitOrdersForThisTransactor(transactorPKID *PKID) ([]*DAOCoinLimitOrderEntry, error) {
 	// This function is used by the API to construct all open orders for the input transactor.
 	if transactorPKID == nil {
-		return nil, errors.Errorf("GetAllDAOCoinLimitOrdersForThisTransactor: Called with nil transactor PKID; this should never happen")
+		return nil, errors.Errorf("GetAllDAOCoinLimitOrdersForThisTransactor: Called with nil transactor PublicKey; this should never happen")
 	}
 
 	outputEntries := []*DAOCoinLimitOrderEntry{}

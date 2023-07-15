@@ -5451,7 +5451,7 @@ func (tsl *TransactionSpendingLimit) ToMetamaskString(params *DeSoParams) string
 			opString := _indt(indentationCounter) + "[\n"
 
 			indentationCounter++
-			opString += _indt(indentationCounter) + "Creator PKID: " +
+			opString += _indt(indentationCounter) + "Creator PublicKey: " +
 				Base58CheckEncode(limitKey.CreatorPKID.ToBytes(), false, params) + "\n"
 			opString += _indt(indentationCounter) + "Operation: " +
 				limitKey.Operation.ToString() + "\n"
@@ -5476,7 +5476,7 @@ func (tsl *TransactionSpendingLimit) ToMetamaskString(params *DeSoParams) string
 			opString := _indt(indentationCounter) + "[\n"
 
 			indentationCounter++
-			opString += _indt(indentationCounter) + "Creator PKID: " +
+			opString += _indt(indentationCounter) + "Creator PublicKey: " +
 				Base58CheckEncode(limitKey.CreatorPKID.ToBytes(), false, params) + "\n"
 			opString += _indt(indentationCounter) + "Operation: " +
 				limitKey.Operation.ToString() + "\n"
@@ -5527,9 +5527,9 @@ func (tsl *TransactionSpendingLimit) ToMetamaskString(params *DeSoParams) string
 			opString := _indt(indentationCounter) + "[\n"
 
 			indentationCounter++
-			opString += _indt(indentationCounter) + "Buying DAO Creator PKID: " +
+			opString += _indt(indentationCounter) + "Buying DAO Creator PublicKey: " +
 				Base58CheckEncode(limitKey.BuyingDAOCoinCreatorPKID.ToBytes(), false, params) + "\n"
-			opString += _indt(indentationCounter) + "Selling DAO Creator PKID: " +
+			opString += _indt(indentationCounter) + "Selling DAO Creator PublicKey: " +
 				Base58CheckEncode(limitKey.SellingDAOCoinCreatorPKID.ToBytes(), false, params) + "\n"
 			opString += _indt(indentationCounter) + "Transaction Count: " +
 				strconv.FormatUint(limit, 10) + "\n"
@@ -5564,7 +5564,7 @@ func (tsl *TransactionSpendingLimit) ToMetamaskString(params *DeSoParams) string
 			if limitKey.AppScopeType == AssociationAppScopeTypeScoped {
 				appPublicKeyBase58Check = Base58CheckEncode(limitKey.AppPKID.ToBytes(), false, params)
 			}
-			opString += _indt(indentationCounter) + "App PKID: " +
+			opString += _indt(indentationCounter) + "App PublicKey: " +
 				appPublicKeyBase58Check + "\n"
 			opString += _indt(indentationCounter) + "Operation: " +
 				limitKey.Operation.ToString() + "\n"
@@ -6406,7 +6406,7 @@ func (creatorCoinOperationLimitKey *CreatorCoinOperationLimitKey) Decode(rr *byt
 	}
 	creatorPKID := NewPKID(creatorPKIDBytes)
 	if creatorPKID == nil {
-		return fmt.Errorf("Invalid PKID")
+		return fmt.Errorf("Invalid PublicKey")
 	}
 	creatorCoinOperationLimitKey.CreatorPKID = *creatorPKID
 	operationKey, err := ReadUvarint(rr)
@@ -6523,7 +6523,7 @@ func (daoCoinOperationLimitKey *DAOCoinOperationLimitKey) Decode(rr *bytes.Reade
 	}
 	creatorPKID := NewPKID(creatorPKIDBytes)
 	if creatorPKID == nil {
-		return fmt.Errorf("Invalid PKID")
+		return fmt.Errorf("Invalid PublicKey")
 	}
 	daoCoinOperationLimitKey.CreatorPKID = *creatorPKID
 	operationKey, err := ReadUvarint(rr)
@@ -7344,7 +7344,7 @@ func (txnData *DAOCoinLimitOrderMetadata) FromBytes(data []byte) error {
 		pubKey, err := ReadPublicKey(rr)
 		if err != nil {
 			return fmt.Errorf(
-				"DAOCoinLimitOrderMetadata.FromBytes: Error reading PKID at index %v: %v", ii, err)
+				"DAOCoinLimitOrderMetadata.FromBytes: Error reading PublicKey at index %v: %v", ii, err)
 		}
 		var inputsLength uint64
 		inputsLength, err = ReadUvarint(rr)

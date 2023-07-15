@@ -382,10 +382,10 @@ func (bav *UtxoView) HelpConnectCoinTransfer(
 	if receiverBalanceEntry == nil || receiverBalanceEntry.isDeleted {
 		receiverPKID := bav.GetPKIDForPublicKey(receiverPublicKey)
 		creatorPKID := bav.GetPKIDForPublicKey(creatorProfileEntry.PublicKey)
-		// Sanity check that we found a PKID entry for these pub keys (should never fail).
+		// Sanity check that we found a PublicKey entry for these pub keys (should never fail).
 		if receiverPKID == nil || receiverPKID.isDeleted || creatorPKID == nil || creatorPKID.isDeleted {
 			return 0, 0, nil, fmt.Errorf(
-				"_helpConnectCoinTransfer: Found nil or deleted PKID for receiver or creator, this should never "+
+				"_helpConnectCoinTransfer: Found nil or deleted PublicKey for receiver or creator, this should never "+
 					"happen. Receiver pubkey: %v, creator pubkey: %v",
 				PkToStringMainnet(receiverPublicKey),
 				PkToStringMainnet(creatorProfileEntry.PublicKey))

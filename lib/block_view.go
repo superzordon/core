@@ -251,7 +251,7 @@ func (bav *UtxoView) CopyUtxoView() (*UtxoView, error) {
 		newView.PostHashToPostEntry[postHash] = &newPostEntry
 	}
 
-	// Copy the PKID data
+	// Copy the PublicKey data
 	newView.PublicKeyToPKIDEntry = make(map[PkMapKey]*PKIDEntry, len(bav.PublicKeyToPKIDEntry))
 	for pkMapKey, pkid := range bav.PublicKeyToPKIDEntry {
 		newPKID := *pkid
@@ -1160,14 +1160,14 @@ func (bav *UtxoView) DisconnectTransaction(currentTxn *MsgDeSoTxn, txnHash *Bloc
 		// Make sure we haven't seen the nonce yet
 		pkidEntry := bav.GetPKIDForPublicKey(currentTxn.PublicKey)
 		if pkidEntry == nil || pkidEntry.isDeleted {
-			return fmt.Errorf("DisconnectTransaction: PKID for public key %s does not exist", PkToString(currentTxn.PublicKey, bav.Params))
+			return fmt.Errorf("DisconnectTransaction: PublicKey for public key %s does not exist", PkToString(currentTxn.PublicKey, bav.Params))
 		}
 		nonce, err := bav.GetTransactorNonceEntry(currentTxn.TxnNonce, pkidEntry.PKID)
 		if err != nil {
-			return errors.Wrapf(err, "DisconnectTransaction: Problem getting account nonce for nonce %s and PKID %v", currentTxn.TxnNonce.String(), pkidEntry.PKID)
+			return errors.Wrapf(err, "DisconnectTransaction: Problem getting account nonce for nonce %s and PublicKey %v", currentTxn.TxnNonce.String(), pkidEntry.PKID)
 		}
 		if nonce == nil || nonce.isDeleted {
-			return fmt.Errorf("DisconnectTransaction: Nonce %s hasn't been seen for PKID %v", currentTxn.TxnNonce.String(), pkidEntry.PKID)
+			return fmt.Errorf("DisconnectTransaction: Nonce %s hasn't been seen for PublicKey %v", currentTxn.TxnNonce.String(), pkidEntry.PKID)
 		}
 		bav.DeleteTransactorNonceEntry(nonce)
 	}
@@ -2540,7 +2540,7 @@ func (bav *UtxoView) _checkDAOCoinLimitOrderLimitAndUpdateDerivedKeyEntry(
 			"_checkDAOCoinLimitOrderLimitAndUpdateDerivedKeyEntry: selling pkid is deleted")
 	}
 
-	// Check (buying DAO Creator PKID || selling DAO Creator PKID) key
+	// Check (buying DAO Creator PublicKey || selling DAO Creator PublicKey) key
 	buyingAndSellingKey := MakeDAOCoinLimitOrderLimitKey(*buyingPKIDEntry.PKID, *sellingPKIDEntry.PKID)
 	if _checkDAOCoinLimitOrderLimitKeyAndUpdateDerivedKeyEntry(buyingAndSellingKey, derivedKeyEntry) {
 		return derivedKeyEntry, nil
@@ -3031,7 +3031,7 @@ func (bav *UtxoView) _connectTransaction(txn *MsgDeSoTxn, txHash *BlockHash, txn
 			}
 			pkidEntry := bav.GetPKIDForPublicKey(postEntry.PosterPublicKey)
 			if pkidEntry == nil || pkidEntry.isDeleted {
-				return nil, 0, 0, 0, fmt.Errorf("_connectTransaction: PKID not found for "+
+				return nil, 0, 0, 0, fmt.Errorf("_connectTransaction: PublicKey not found for "+
 					"public key: %v", PkToString(postEntry.PosterPublicKey, bav.Params))
 			}
 			nftCreatorCoinRoyaltyEntriesSnapshot[*(pkidEntry.PKID)] = nftCreatorProfileEntry.CreatorCoinEntry.Copy()
@@ -3291,19 +3291,19 @@ func (bav *UtxoView) _connectTransaction(txn *MsgDeSoTxn, txHash *BlockHash, txn
 		pkidEntry := bav.GetPKIDForPublicKey(txn.PublicKey)
 		if pkidEntry == nil || pkidEntry.isDeleted {
 			return nil, 0, 0, 0, fmt.Errorf(
-				"DisconnectTransaction: PKID for public key %s does not exist",
+				"DisconnectTransaction: PublicKey for public key %s does not exist",
 				PkToString(txn.PublicKey, bav.Params))
 		}
 
 		nonce, err := bav.GetTransactorNonceEntry(txn.TxnNonce, pkidEntry.PKID)
 		if err != nil {
 			return nil, 0, 0, 0, errors.Wrapf(err,
-				"ConnectTransaction: Problem getting transaction nonce entry for nonce %s and PKID %v",
+				"ConnectTransaction: Problem getting transaction nonce entry for nonce %s and PublicKey %v",
 				txn.TxnNonce.String(), pkidEntry.PKID)
 		}
 		if nonce != nil && !nonce.isDeleted {
 			return nil, 0, 0, 0, errors.Wrapf(RuleErrorReusedNonce,
-				"ConnectTransaction: Nonce %s has already been used for PKID %v",
+				"ConnectTransaction: Nonce %s has already been used for PublicKey %v",
 				txn.TxnNonce.String(), pkidEntry.PKID)
 		}
 		bav.SetTransactorNonceEntry(&TransactorNonceEntry{
@@ -3780,7 +3780,7 @@ func (bav *UtxoView) ConstructNonceForPublicKey(publicKey []byte, blockHeight ui
 	pkidEntry := bav.GetPKIDForPublicKey(publicKey)
 	if pkidEntry == nil || pkidEntry.isDeleted {
 		return nil, fmt.Errorf(
-			"ConstructNonceForPublicKey: No PKID entry found for public key %s",
+			"ConstructNonceForPublicKey: No PublicKey entry found for public key %s",
 			PkToStringBoth(publicKey))
 	}
 	return bav.ConstructNonceForPKID(pkidEntry.PKID, blockHeight)

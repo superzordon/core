@@ -560,7 +560,9 @@ func NewServer(
 	// This can happen if the node was terminated mid-operation last time it was running. The recovery process rolls back
 	// blocks to the beginning of the current snapshot epoch and resets to the state checksum to the epoch checksum.
 	if shouldRestart {
-		stateChangeSyncer.Reset()
+		if _stateChangeFilePath != "" {
+			stateChangeSyncer.Reset()
+		}
 		glog.Errorf(CLog(Red, "NewServer: Forcing a rollback to the last snapshot epoch because node was not closed "+
 			"properly last time"))
 		if err := _snapshot.ForceResetToLastSnapshot(_chain); err != nil {

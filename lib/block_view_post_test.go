@@ -1198,7 +1198,7 @@ func TestSubmitPost(t *testing.T) {
 	}
 
 	// Swapping the identity of m0 and m1 should not result in any issues.
-	// TODO: This will no longer be the case once posts are a part of the PKID
+	// TODO: This will no longer be the case once posts are a part of the PublicKey
 	// infrastructure.
 	swapIdentity(
 		10,    /*feeRateNanosPerKB*/
